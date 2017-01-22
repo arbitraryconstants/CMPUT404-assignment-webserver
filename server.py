@@ -45,9 +45,8 @@ class MyWebServer(SocketServer.BaseRequestHandler):
         # https://stackoverflow.com/questions/415511/how-to-get-current-time-in-python
         self.date = strftime("%a, %d %b %Y %X GMT", gmtime()) 
         self.path = "./www"
-        print ("Got a request of: %s\n" % self.data)
 
-        if self.verify_method():
+        if self.verify_method()  == True:
             self.verify_path() 
         self.send_response()
 
@@ -59,10 +58,10 @@ class MyWebServer(SocketServer.BaseRequestHandler):
       
         self.code = 405
         return False
+
     
     def verify_path(self):
         self.path += self.data.split()[1]
-        print "PATH: " + self.path
 
         if self.verify_path_depth() == False:
             self.code = 404
@@ -73,7 +72,6 @@ class MyWebServer(SocketServer.BaseRequestHandler):
         
         if not (self.path.endswith(".html") or self.path.endswith(".css" )) :
             try:
-                print "PATHHHHHH:" + self.path + "/index.html"
                 self.content = open(self.path + "/index.html", 'r').read()
                 self.code = 302
                 self.path = self.path[5:] + "/"
@@ -93,25 +91,19 @@ class MyWebServer(SocketServer.BaseRequestHandler):
         except:
             self.code = 404
 
+            
     # By OpenStack Vulnerability Management Team
     # on openstack: https://security.openstack.org/guidelines/dg_using-file-paths.html
     def verify_path_depth(self):
         base_directory = os.getcwd() + "/www"
-        print "BASE DIRECTORY", base_directory
-        print "REAL PATH: " + os.path.realpath(self.path)
-        print "RETURN REAL PATH: ", os.path.realpath(self.path).startswith(base_directory)
-        print "ABS PATH: " +  os.path.abspath(self.path)
-        print "RETURN ABS PATH: ", os.path.abspath(self.path).startswith(base_directory)
-    
+        # As a webserver admin I want ONLY files in ./www and deeper to be served.
         return os.path.realpath(self.path).startswith(base_directory)
 
-        
             
     def send_response(self):
         if self.code == 405:
-            self.request.sendall( http_response[405]  + "\r\n",
+            self.request.sendall( http_response[405]  + "\r\n" +
                                   "Allow: GET"  + "\r\n")
-            print(http_response[405] + "\r\n")
             
         elif self.code == 200:
             self.request.sendall( http_response[200] + "\r\n" +
@@ -121,25 +113,13 @@ class MyWebServer(SocketServer.BaseRequestHandler):
                                   "\r\n" +
                                   self.content + "\r\n")
 
-            print( http_response[200] + "\r\n" +
-                   "Content-Type: " + self.mimetype + "; charset=UTF-8" + "\r\n" +
-                   "Date: " + self.date + "\r\n" +
-                   "Content-Length: " + str(self.content_size)  + "\r\n" +
-                   "\r\n" +
-                   self.content + "\r\n")
-
         elif self.code == 404:
             self.request.sendall(http_response[404]  + "\r\n")
-            print(http_response[404] + "\r\n")
 
         elif self.code == 302:
             self.request.sendall( http_response[302]  + "\r\n"
                                   "Date: " + self.date + "\r\n" +
                                   "Location: " + self.path + "\r\n")
-            print( http_response[302] + "\r\n"
-                   "Date: " + self.date + "\r\n" +
-                   "Location: " + self.path + "\r\n")
-            
 
             
 if __name__ == "__main__":
